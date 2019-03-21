@@ -12,10 +12,11 @@ import json
 flag = 0
 
 class lagouSpider(object):
-    def __init__(self, json_queue):
+    def __init__(self, json_queue, proxy_queue):
         self.browser = webdriver.Chrome()
         self.browser.get('https://www.lagou.com/jobs/list_python?labelWords=&fromSearch=true&suginput=')
         self.json_queue = json_queue
+        self.proxy_queue = proxy_queue
 
 
     def run(self):
@@ -34,15 +35,18 @@ class lagouSpider(object):
             next_page = self.browser.find_elements_by_xpath("//span[@action='next']")
             
             if next_page.get_attribute('class') == 'pager_next':
-                button.click()
+                next_page.click()
+                try:
 
-                now_page = self.browser.find_elements_by_xpath("//span[@class='pager_is_current']")
+                    now_page = self.browser.find_elements_by_xpath("//span[@class='pager_is_current']")
 
-                wait = WebDriverWait(self.browser, 10)
-                
-                wait.until(EC.text_to_be_present_in_element(now_page,str(page)))
- 
-                urls = self.browser.find_elements_by_xpath("//a[@class='position_link']")
+                    wait = WebDriverWait(self.browser, 10)
+                    
+                    wait.until(EC.text_to_be_present_in_element(now_page,str(page)))
+     
+                    urls = self.browser.find_elements_by_xpath("//a[@class='position_link']")
+                except:
+                    pass
                 for url in urls:
                     link = url.get_attribute('href')
                     self.get_detail_page(link)
@@ -54,7 +58,37 @@ class lagouSpider(object):
             print('爬取detail链接完成！')
             break
             
+    def call_back(self,url,func):
         
+        func(url)
+    def login_lagou(self):
+        pass
+
+    def test_proxy(self, pro):
+        import requests
+        proxies = {'http': ' '}
+        proxies['http'] = 'http://'+pro
+        url = 'http://www.baidu.com'
+        res = requests.post(url, proxies=proxies, verify=False)
+        if res.status_code == 200:
+            return True
+        return False
+
+
+    def get_proxy(self):
+        while True:
+            
+            if self.proxy_queue.empty():
+                return False
+                pro = self.proxy_queue.get()
+                if self.test_proxy(pro):
+                    break
+            
+        
+        
+        chromeOptions = webdriver.ChromeOptions()
+        chromeOptions.add_argument('--proxy-server=http://'+pro)
+         
         
         
     def get_detail_page(self, url):
@@ -89,7 +123,11 @@ class lagouSpider(object):
             print('反爬虫！')
             self.browser.close()
             self.browser.switch_to.window(self.browser.window_handles[0])
-            time.sleep(30)
+            if not self.get.proxy():
+                return 
+            self.call_back(url,self.get_detail_page)
+        
+            
         
 class Writer(threading.Thread):
     
