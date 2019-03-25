@@ -16,4 +16,8 @@ sulenium
 限制速度
 
 
+
+使用beautifulSoup，xpath，css，re解析数据
+
+
 1，当当网书籍信息存入mysql
